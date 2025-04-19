@@ -4,6 +4,9 @@ import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { useState, useRef } from "react";
+import { Leaderboard } from "./Leaderboard";
+import { Friends } from "./Friends";
+import { UsernameForm } from "./UsernameForm";
 
 export default function App() {
   return (
@@ -17,10 +20,66 @@ export default function App() {
       </Unauthenticated>
 
       <Authenticated>
-        <HomeScreen />
+        <AuthenticatedApp />
       </Authenticated>
       <Toaster />
     </div>
+  );
+}
+
+function AuthenticatedApp() {
+  const user = useQuery(api.users.getUser);
+  const [currentTab, setCurrentTab] = useState<"home" | "leaderboard" | "friends">("home");
+  
+  // Show username form if user hasn't set one
+  if (!user) return null;
+  if (!user?.username) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <UsernameForm />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {currentTab === "home" && <HomeScreen />}
+      {currentTab === "leaderboard" && <Leaderboard />}
+      {currentTab === "friends" && <Friends />}
+      
+      {/* Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
+        <div className="max-w-lg mx-auto px-4 flex justify-around">
+          <button 
+            onClick={() => setCurrentTab("home")}
+            className={`p-2 flex flex-col items-center ${
+              currentTab === "home" ? "text-yellow-600 font-medium" : "text-gray-500"
+            }`}
+          >
+            <span className="text-2xl">🏠</span>
+            <span className="text-xs mt-1">Home</span>
+          </button>
+          <button 
+            onClick={() => setCurrentTab("leaderboard")}
+            className={`p-2 flex flex-col items-center ${
+              currentTab === "leaderboard" ? "text-yellow-600 font-medium" : "text-gray-500"
+            }`}
+          >
+            <span className="text-2xl">🏆</span>
+            <span className="text-xs mt-1">Leaderboard</span>
+          </button>
+          <button 
+            onClick={() => setCurrentTab("friends")}
+            className={`p-2 flex flex-col items-center ${
+              currentTab === "friends" ? "text-yellow-600 font-medium" : "text-gray-500"
+            }`}
+          >
+            <span className="text-2xl">👥</span>
+            <span className="text-xs mt-1">Friends</span>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }
 
@@ -56,7 +115,8 @@ function HomeScreen() {
     }
   }
 
-  function formatTimeAgo(timestamp: number) {
+  function formatTimeAgo(timestamp: number | undefined) {
+    if (!timestamp) return "";
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.floor(seconds / 60);
@@ -67,7 +127,7 @@ function HomeScreen() {
   }
 
   return (
-    <div className="flex-1 max-w-lg mx-auto w-full p-4 flex flex-col gap-6">
+    <div className="flex-1 max-w-lg mx-auto w-full p-4 flex flex-col gap-6 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -142,15 +202,6 @@ function HomeScreen() {
           </div>
         )}
       </div>
-
-      {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
-        <div className="max-w-lg mx-auto px-4 flex justify-around">
-          <button className="p-2 text-yellow-600 font-medium">Home</button>
-          <button className="p-2 text-gray-500">Upload</button>
-          <button className="p-2 text-gray-500">Profile</button>
-        </div>
-      </nav>
     </div>
   );
 }
