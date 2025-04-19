@@ -14,9 +14,19 @@ const applicationTables = {
     userId: v.id("users"),
     totalPoints: v.number(),
     totalSpots: v.number(),
+    username: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
   })
     .index("by_points", ["totalPoints"])
+    .index("by_user", ["userId"]),
+
+  friendships: defineTable({
+    userId: v.id("users"),
+    friendId: v.id("users"),
+    status: v.string(), // "pending" or "accepted"
+  })
     .index("by_user", ["userId"])
+    .index("by_friend", ["friendId"])
 };
 
 export default defineSchema({

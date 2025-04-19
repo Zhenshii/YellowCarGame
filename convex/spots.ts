@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const generateUploadUrl = mutation({
@@ -20,8 +20,7 @@ export const createSpot = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Please log in");
 
-    // Add spot with points
-    const points = 10; // Base points per spot
+    const points = 10;
     await ctx.db.insert("spots", {
       userId,
       imageId: args.storageId,
@@ -29,7 +28,6 @@ export const createSpot = mutation({
       description: args.description,
     });
 
-    // Update user score
     const existingScore = await ctx.db
       .query("userScores")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -41,16 +39,19 @@ export const createSpot = mutation({
         totalSpots: existingScore.totalSpots + 1,
       });
     } else {
+      const user = await ctx.db.get(userId);
       await ctx.db.insert("userScores", {
         userId,
         totalPoints: points,
         totalSpots: 1,
+        username: user?.email?.split('@')[0] ?? "Anonymous",
+        avatarUrl: user?.image,
       });
     }
   },
 });
 
-export const listSpots = query({
+export const getRecentSpots = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -60,34 +61,65 @@ export const listSpots = query({
       .query("spots")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(3);
 
     return Promise.all(
       spots.map(async (spot) => ({
         ...spot,
         imageUrl: await ctx.storage.getUrl(spot.imageId),
+        createdAt: spot._creationTime,
       }))
     );
   },
 });
 
-export const getLeaderboard = query({
+export const getUserStats = query({
   args: {},
   handler: async (ctx) => {
-    const scores = await ctx.db
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const userScore = await ctx.db
+      .query("userScores")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .unique();
+
+    if (!userScore) return null;
+
+    // Find next friend above user
+    const allScores = await ctx.db
       .query("userScores")
       .withIndex("by_points")
       .order("desc")
-      .take(10);
+      .collect();
 
-    return Promise.all(
-      scores.map(async (score) => {
-        const user = await ctx.db.get(score.userId);
-        return {
-          ...score,
-          username: user?.email ?? "Anonymous",
-        };
-      })
-    );
+    const userRank = allScores.findIndex(score => score.userId === userId);
+    let nextFriend = null;
+    
+    if (userRank > 0) {
+      const friendships = await ctx.db
+        .query("friendships")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      
+      const friendIds = friendships
+        .filter(f => f.status === "accepted")
+        .map(f => f.friendId);
+
+      for (let i = userRank - 1; i >= 0; i--) {
+        if (friendIds.includes(allScores[i].userId)) {
+          nextFriend = allScores[i];
+          break;
+        }
+      }
+    }
+
+    return {
+      ...userScore,
+      nextFriend: nextFriend ? {
+        username: nextFriend.username,
+        pointsDiff: nextFriend.totalPoints - userScore.totalPoints,
+      } : null,
+    };
   },
 });
