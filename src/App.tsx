@@ -1,207 +1,34 @@
-import { Authenticated, Unauthenticated, useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { useConvexAuth } from "convex/react";
 import { SignInForm } from "./SignInForm";
-import { SignOutButton } from "./SignOutButton";
-import { Toaster } from "sonner";
-import { useState, useRef } from "react";
-import { Leaderboard } from "./Leaderboard";
-import { Friends } from "./Friends";
-import { UsernameForm } from "./UsernameForm";
+import { HomeScreen } from "./HomeScreen";
+import { LeaderboardScreen } from "./LeaderboardScreen";
+import { FriendsScreen } from "./FriendsScreen";
 
 export default function App() {
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Unauthenticated>
-        <div className="text-center p-8">
-          <h1 className="text-4xl font-bold text-yellow-600 mb-4">Yellow Car Game</h1>
-          <p className="text-xl text-slate-600 mb-8">Sign in to start playing</p>
-          <SignInForm />
-        </div>
-      </Unauthenticated>
+  const { isAuthenticated, isLoading } = useConvexAuth();
 
-      <Authenticated>
-        <AuthenticatedApp />
-      </Authenticated>
-      <Toaster />
-    </div>
-  );
-}
-
-function AuthenticatedApp() {
-  const user = useQuery(api.users.getUser);
-  const [currentTab, setCurrentTab] = useState<"home" | "leaderboard" | "friends">("home");
-  
-  // Show username form if user hasn't set one
-  if (!user) return null;
-  if (!user?.username) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <UsernameForm />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
-  return (
-    <>
-      {currentTab === "home" && <HomeScreen />}
-      {currentTab === "leaderboard" && <Leaderboard />}
-      {currentTab === "friends" && <Friends />}
-      
-      {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
-        <div className="max-w-lg mx-auto px-4 flex justify-around">
-          <button 
-            onClick={() => setCurrentTab("home")}
-            className={`p-2 flex flex-col items-center ${
-              currentTab === "home" ? "text-yellow-600 font-medium" : "text-gray-500"
-            }`}
-          >
-            <span className="text-2xl">🏠</span>
-            <span className="text-xs mt-1">Home</span>
-          </button>
-          <button 
-            onClick={() => setCurrentTab("leaderboard")}
-            className={`p-2 flex flex-col items-center ${
-              currentTab === "leaderboard" ? "text-yellow-600 font-medium" : "text-gray-500"
-            }`}
-          >
-            <span className="text-2xl">🏆</span>
-            <span className="text-xs mt-1">Leaderboard</span>
-          </button>
-          <button 
-            onClick={() => setCurrentTab("friends")}
-            className={`p-2 flex flex-col items-center ${
-              currentTab === "friends" ? "text-yellow-600 font-medium" : "text-gray-500"
-            }`}
-          >
-            <span className="text-2xl">👥</span>
-            <span className="text-xs mt-1">Friends</span>
-          </button>
-        </div>
-      </nav>
-    </>
-  );
-}
-
-function HomeScreen() {
-  const stats = useQuery(api.spots.getUserStats);
-  const recentSpots = useQuery(api.spots.getRecentSpots) ?? [];
-  const generateUploadUrl = useMutation(api.spots.generateUploadUrl);
-  const createSpot = useMutation(api.spots.createSpot);
-  
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
-
-  if (!stats) return null;
-
-  async function handleUpload(event: React.FormEvent) {
-    event.preventDefault();
-    if (!selectedImage) return;
-
-    try {
-      const postUrl = await generateUploadUrl();
-      const result = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": selectedImage.type },
-        body: selectedImage,
-      });
-      const { storageId } = await result.json();
-      
-      await createSpot({ storageId });
-      setSelectedImage(null);
-      if (fileInput.current) fileInput.current.value = "";
-    } catch (error) {
-      console.error("Upload failed:", error);
-    }
+  if (!isAuthenticated) {
+    return <SignInForm />;
   }
 
-  function formatTimeAgo(timestamp: number | undefined) {
-    if (!timestamp) return "";
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+  // Simple client-side routing
+  const path = window.location.pathname;
+
+  if (path === "/leaderboard") {
+    return <LeaderboardScreen />;
   }
 
-  return (
-    <div className="flex-1 max-w-lg mx-auto w-full p-4 flex flex-col gap-6 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center text-yellow-800 font-bold">
-            {stats.username?.[0]?.toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Welcome back, {stats.username}!</h1>
-            <p className="text-3xl font-bold text-yellow-600">{stats.totalPoints} pts</p>
-          </div>
-        </div>
-        <SignOutButton />
-      </div>
+  if (path === "/friends") {
+    return <FriendsScreen />;
+  }
 
-      {/* Upload Button */}
-      <form onSubmit={handleUpload} className="space-y-4">
-        <label 
-          className="block w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-center rounded-xl cursor-pointer text-white font-bold shadow-lg hover:shadow-xl transition-all"
-        >
-          🚗 Spot one? Upload it!
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInput}
-            onChange={(e) => setSelectedImage(e.target.files?.[0] ?? null)}
-            className="hidden"
-          />
-        </label>
-        {selectedImage && (
-          <button
-            type="submit"
-            className="w-full py-2 bg-green-500 text-white rounded-lg font-medium"
-          >
-            Submit Photo
-          </button>
-        )}
-      </form>
-
-      {/* Social Nudge */}
-      {stats.nextFriend && (
-        <div className="bg-blue-50 p-4 rounded-xl">
-          <p className="text-blue-800">
-            You're only {stats.nextFriend.pointsDiff} pts behind {stats.nextFriend.username}! Keep going! 🔥
-          </p>
-        </div>
-      )}
-
-      {/* Recent Uploads */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Recent Spots</h2>
-        {recentSpots.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
-            No spots yet! Get out there and find some yellow cars! 🚕
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 gap-3">
-            {recentSpots.map((spot) => (
-              <div key={spot._id} className="relative rounded-lg overflow-hidden bg-white shadow">
-                {spot.imageUrl && (
-                  <img 
-                    src={spot.imageUrl} 
-                    alt="Yellow car spot" 
-                    className="w-full aspect-square object-cover"
-                  />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm">
-                  <div>+{spot.points} pts</div>
-                  <div className="text-xs opacity-75">{formatTimeAgo(spot.createdAt)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <HomeScreen />;
 }

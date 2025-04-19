@@ -2,7 +2,7 @@
   
 This is a project built with [Chef](https://chef.convex.dev) using [Convex](https://convex.dev) as its backend.
   
-This project is connected to the Convex deployment named [`benevolent-chickadee-673`](https://dashboard.convex.dev/d/benevolent-chickadee-673).
+This project is connected to the Convex deployment named [`agile-curlew-994`](https://dashboard.convex.dev/d/agile-curlew-994).
   
 ## Project structure
   
