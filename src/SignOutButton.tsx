@@ -1,18 +1,18 @@
-"use client";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+interface SignOutButtonProps {
+  className?: string;
+}
 
-export function SignOutButton() {
-  const { isAuthenticated } = useConvexAuth();
-  const { signOut } = useAuthActions();
-
-  if (!isAuthenticated) {
-    return null;
-  }
+export function SignOutButton({ className }: SignOutButtonProps) {
+  const handleSignOut = () => {
+    // Clear any auth tokens
+    localStorage.clear();
+    // Navigate to sign in page
+    window.location.href = "/";
+  };
 
   return (
-    <button className="px-4 py-2 rounded-lg transition-colors bg-blue-500 text-white" onClick={() => void signOut()}>
-      Sign out
+    <button onClick={handleSignOut} className={className}>
+      Sign Out
     </button>
   );
 }

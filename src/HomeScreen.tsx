@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { SignOutButton } from "./SignOutButton";
 
 export function HomeScreen() {
   const userStats = useQuery(api.spots.getUserStats);
@@ -80,18 +81,21 @@ export function HomeScreen() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 pb-24">
       {/* Header Section */}
-      <div className="flex items-center mb-6">
-        <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">
-          {userStats.name.substring(0, 2).toUpperCase()}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">
+            {userStats.name.substring(0, 2).toUpperCase()}
+          </div>
+          <div className="ml-4">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Welcome back, {userStats.name}
+            </h1>
+            <p className="text-3xl font-bold text-yellow-600">
+              {userStats.totalPoints.toLocaleString()} pts
+            </p>
+          </div>
         </div>
-        <div className="ml-4">
-          <h1 className="text-xl font-semibold text-gray-900">
-            Welcome back, {userStats.name}
-          </h1>
-          <p className="text-3xl font-bold text-yellow-600">
-            {userStats.totalPoints.toLocaleString()} pts
-          </p>
-        </div>
+        <SignOutButton className="text-gray-600 hover:text-gray-800" />
       </div>
 
       {/* Upload Section */}
