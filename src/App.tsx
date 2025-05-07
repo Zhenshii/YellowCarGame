@@ -3,9 +3,13 @@ import { SignInForm } from "./SignInForm";
 import { HomeScreen } from "./HomeScreen";
 import { LeaderboardScreen } from "./LeaderboardScreen";
 import { FriendsScreen } from "./FriendsScreen";
+import { UsernameSetupScreen } from "./UsernameSetupScreen";
+import { useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
 
 export default function App() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const user = useQuery(api.users.getUser);
 
   if (isLoading) {
     return (
@@ -17,6 +21,11 @@ export default function App() {
 
   if (!isAuthenticated) {
     return <SignInForm />;
+  }
+
+  // Show username setup if user doesn't have a name
+  if (user && !user.name) {
+    return <UsernameSetupScreen />;
   }
 
   // Simple client-side routing

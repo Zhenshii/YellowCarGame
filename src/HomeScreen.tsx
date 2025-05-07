@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { SignOutButton } from "./SignOutButton";
+import { SignOutWrapper } from "./SignOutWrapper";
 
 export function HomeScreen() {
   const userStats = useQuery(api.spots.getUserStats);
@@ -95,7 +95,7 @@ export function HomeScreen() {
             </p>
           </div>
         </div>
-        <SignOutButton className="text-gray-600 hover:text-gray-800" />
+        <SignOutWrapper className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900" />
       </div>
 
       {/* Upload Section */}
