@@ -20,4 +20,12 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_points", ["totalPoints"]),
+
+  friendRequests: defineTable({
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    status: v.string(), // "pending", "accepted", "rejected"
+  })
+    .index("by_to_user", ["toUserId", "status"])
+    .index("by_from_user", ["fromUserId", "status"]),
 });

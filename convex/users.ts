@@ -24,6 +24,33 @@ export const checkUsername = query({
   },
 });
 
+export const searchUsers = query({
+  args: {
+    query: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    if (args.query.length < 2) return [];
+
+    // Use a filter instead of search since we can't modify auth tables
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => 
+        q.neq(q.field("_id"), userId) && // Don't show current user
+        q.gte(q.field("name"), args.query) && // Simple prefix search
+        q.lt(q.field("name"), args.query + "\uffff")
+      )
+      .take(5);
+
+    return users.map(user => ({
+      id: user._id,
+      name: user.name ?? "Anonymous",
+    }));
+  },
+});
+
 export const setUsername = mutation({
   args: {
     username: v.string(),
